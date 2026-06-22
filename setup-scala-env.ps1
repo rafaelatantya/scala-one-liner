@@ -3,7 +3,7 @@
 Otomatisasi instalasi dan setup environment Scala 3, Java (JVM), dan SBT di Windows.
 #>
 
-# 1. Mengecek Hak Akses Administrator
+# 1. Cek Admin
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "[ERROR] Tolong jalankan PowerShell pakai 'Run as Administrator' ya!" -ForegroundColor Red
@@ -12,13 +12,7 @@ if (-not $isAdmin) {
 
 Write-Host "[INFO] Memulai setup environment Scala..." -ForegroundColor Cyan
 
-# === FUNGSI SAKTI BUAT REFRESH PATH LIVE ===
-function Refresh-Path {
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-}
-# ===========================================
-
-# 2. Setup Folder Dinamis
+# 2. Setup Folder
 $docPath = [Environment]::GetFolderPath('MyDocuments')
 $workspace = Join-Path $docPath "scala-folder"
 
@@ -36,34 +30,28 @@ Write-Host "`n[PROSES] Mengecek instalasi Coursier..." -ForegroundColor Yellow
 if (-not (Get-Command cs -ErrorAction SilentlyContinue)) {
     Write-Host "[PROSES] Coursier tidak ditemukan. Menginstall via Winget..." -ForegroundColor Yellow
     winget install coursier.coursier --accept-source-agreements --accept-package-agreements | Out-Null
-    
-    # Langsung refresh path biar command 'cs' langsung dikenali
-    Write-Host "[PROSES] Merefresh environment Path live..." -ForegroundColor Cyan
-    Refresh-Path
 } else {
     Write-Host "[OK] Coursier sudah terpasang." -ForegroundColor Green
 }
 
-# 4. Setup Java, Scala, & SBT otomatis via Coursier
+# 4. SUNTIK PATH PAKSA (Anti-Gagal)
+# Kita maksa ngasih tau PowerShell di mana file 'cs.exe' itu di-install
+$coursierBin = Join-Path $env:LOCALAPPDATA "Coursier\data\bin"
+if ($env:Path -notmatch [regex]::Escape($coursierBin)) {
+    Write-Host "[PROSES] Menyuntik path Coursier ke memori..." -ForegroundColor Cyan
+    $env:Path = "$coursierBin;" + $env:Path
+}
+
+# 5. Setup Java, Scala, & SBT
 Write-Host "`n[PROSES] Cek dan Setup Java JVM, Scala 3, dan SBT..." -ForegroundColor Yellow
 if (Get-Command cs -ErrorAction SilentlyContinue) {
     cs setup --yes
-    
-    # Refresh path lagi setelah Scala dan Java keinstall
-    Write-Host "`n[PROSES] Merefresh environment Path live setelah instalasi Scala..." -ForegroundColor Cyan
-    Refresh-Path
-    
-    # Fallback darurat (Jaga-jaga kalau Path Coursier delay masuk ke Registry)
-    $coursierBin = Join-Path $env:LOCALAPPDATA "Coursier\data\bin"
-    if ($env:Path -notmatch [regex]::Escape($coursierBin)) {
-        $env:Path += ";$coursierBin"
-    }
 } else {
-    Write-Host "[ERROR] Command 'cs' masih belum terbaca. Coba tutup dan buka PowerShell lagi." -ForegroundColor Red
-    Exit
+    Write-Host "[WARN] Alias 'cs' nyangkut. Menjalankan cs.exe langsung dari foldernya..." -ForegroundColor Yellow
+    & (Join-Path $coursierBin "cs.exe") setup --yes
 }
 
-# 5. Verifikasi Instalasi & Cek Versi
+# 6. Verifikasi Instalasi
 Write-Host "`n[VERIFIKASI] Mengecek versi tool yang terinstall:" -ForegroundColor Cyan
 try {
     Write-Host "-> Versi Java:" -ForegroundColor Magenta
@@ -74,10 +62,10 @@ try {
     sbt --script-version
     Write-Host "`n[OK] Semua komponen inti berhasil diverifikasi!" -ForegroundColor Green
 } catch {
-    Write-Host "`n[WARN] Gagal mengecek versi. Tenang aja, biasanya ini delay Path doang." -ForegroundColor Yellow
+    Write-Host "`n[WARN] Gagal mengecek versi (delay terminal doang, gapapa lanjut)." -ForegroundColor Yellow
 }
 
-# 6. Setup Struktur Project SBT
+# 7. Setup Struktur Project SBT
 Write-Host "`n[PROSES] Membuat struktur project dasar..." -ForegroundColor Yellow
 $sbtFile = "build.sbt"
 if (-not (Test-Path $sbtFile)) {
@@ -95,7 +83,7 @@ if (-not (Test-Path $mainFile)) {
 }
 Write-Host "[OK] Struktur project SBT siap." -ForegroundColor Green
 
-# 7. Buka VS Code
+# 8. Buka VS Code
 Write-Host "`n[SELESAI] Membuka VS Code..." -ForegroundColor Green
 if (Get-Command code -ErrorAction SilentlyContinue) {
     code .
