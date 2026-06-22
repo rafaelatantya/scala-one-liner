@@ -1,2 +1,9 @@
-# scala-one-liner
-installing scala in windows
+## Cara Install (Auto Setup)
+
+Buka **PowerShell** (Wajib *Run as Administrator*), lalu *copy-paste* perintah di bawah ini dan tekan Enter:
+
+```powershell
+powershell -ExecutionPolicy Bypass -Command "irm [https://raw.githubusercontent.com/rafaelatantya/scala-one-liner/refs/heads/main/setup-scala-env.ps1](https://raw.githubusercontent.com/rafaelatantya/scala-one-liner/refs/heads/main/setup-scala-env.ps1) | iex"
+```
+
+Tunggu prosesnya sampai selesai, dan VS Code akan otomatis terbuka dengan *environment* Scala yang sudah siap!
