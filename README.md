@@ -7,3 +7,5 @@ powershell -ExecutionPolicy Bypass -Command "irm https://raw.githubusercontent.c
 ```
 
 Tunggu prosesnya sampai selesai, dan VS Code akan otomatis terbuka dengan *environment* Scala yang sudah siap!
+Letak folder yang otomatis dibuat ada di DOCUMENTS/scala-folder
+
